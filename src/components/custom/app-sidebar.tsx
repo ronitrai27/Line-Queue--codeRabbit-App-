@@ -39,12 +39,20 @@ import { LuGrip, LuListTodo, LuRocket } from "react-icons/lu";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { Button } from "../ui/button";
 import { RiGitForkLine } from "react-icons/ri";
+import { useQuery } from "@tanstack/react-query";
+import { getUserGithubDetails } from "@/module/dashboard";
 
 export const AppSidebar = () => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const { user, session, loading, error } = useAuthUser();
+
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ["user-github-data"],
+    queryFn: async () => await getUserGithubDetails(),
+    refetchOnWindowFocus: false,
+  });
   // const { data: session } = useSession();
   // const sessionState = useAtomValue(useSession);
 
@@ -96,7 +104,7 @@ export const AppSidebar = () => {
       <SidebarHeader className="border-b">
         <div className="flex flex-col gap-4 px-2 py-2">
           <h2 className="font-bold text-lg text-center">
-            <RiGitForkLine  className="w-5 h-5 inline mr-2" /> Line-
+            <RiGitForkLine className="w-5 h-5 inline mr-2" /> Line-
             <span className="italic">queue</span>
           </h2>
           <div className="flex items-center gap-4 px-2 rounded-lg bg-sidebar-accent/30 py-2  ">
@@ -106,7 +114,7 @@ export const AppSidebar = () => {
             <h2 className="text-sm">
               Connected Acount <br />{" "}
               <span className="font-semibold text-sidebar-accent-foreground">
-                @{userName}
+                @{stats?.github_username ? stats.github_username : userName}
               </span>
             </h2>
           </div>
