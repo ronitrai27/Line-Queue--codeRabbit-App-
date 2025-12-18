@@ -22,13 +22,34 @@ import ContributionGraph from "@/module/dashboard/contribution-graph";
 import ContributionGraphCurrent from "@/module/dashboard/contribution-current";
 import { Brain, GitBranch, GitBranchPlus, GitPullRequest } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { LuChartBarIncreasing, LuChevronDown } from "react-icons/lu";
+import { LuActivity, LuChartBarIncreasing, LuChevronDown } from "react-icons/lu";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  Area,
+  AreaChart,
+} from "recharts";
+
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+} from "@/components/ui/chart";
 
 const MainPage = () => {
   const { user, session, loading, error } = useAuthUser();
@@ -38,6 +59,10 @@ const MainPage = () => {
   const userFirstName = user?.name.split(" ")[0].toUpperCase() || "GUEST";
 
   const [range, setRange] = useState<"past" | "current">("past");
+  type ViewMode = "normal" | "stacked" | "expand";
+  const [viewMode, setViewMode] = useState<ViewMode>("stacked");
+
+  const stackId = viewMode === "normal" ? undefined : "activity";
 
   //=============== QUERY1================
   const { data: stats, isLoading } = useQuery({
@@ -71,9 +96,10 @@ const MainPage = () => {
       <h1 className="font-bold tracking-wide text-3xl">
         Welcome {userFirstName}
       </h1>
+      {/* CARDS */}
       <div className="grid md:grid-cols-4 gap-4 py-4">
         {/* 1 */}
-        <Card>
+        <Card className="bg-linear-to-br from-white/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm ">Total Repositories</CardTitle>
             <GitBranch className="h-4 w-4 text-muted-foreground" />
@@ -86,7 +112,7 @@ const MainPage = () => {
           </CardContent>
         </Card>
         {/* 2 */}
-        <Card>
+        <Card className="bg-linear-to-br from-white/10">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm">Commits</CardTitle>
             <GitBranchPlus className="h-4 w-4 text-muted-foreground" />
@@ -121,7 +147,7 @@ const MainPage = () => {
         </Card>
 
         {/* 3 */}
-        <Card>
+        <Card className="bg-linear-to-br from-white/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm ">Pull Request</CardTitle>
             <GitPullRequest className="h-4 w-4 text-muted-foreground" />
@@ -134,7 +160,7 @@ const MainPage = () => {
           </CardContent>
         </Card>
         {/* 4 */}
-        <Card>
+        <Card className="bg-linear-to-br from-white/10">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm ">AI Reviews</CardTitle>
             <Brain className="h-4 w-4 text-muted-foreground" />
@@ -148,10 +174,12 @@ const MainPage = () => {
         </Card>
       </div>
       <Separator className="my-2" />
-      <h1 className="text-xl">
+
+      <h1 className="text-xl my-4">
         Contribution HeatMaps{" "}
         <LuChartBarIncreasing className="inline ml-2 w-5 h-5" />
       </h1>
+      {/* HEAT MAPS */}
       <div className="flex-1 w-full px-10 my-4">
         <Card>
           <CardHeader className="flex items-center justify-between space-y-0 pb-2">
@@ -169,7 +197,7 @@ const MainPage = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button size="sm" variant="outline" className="text-xs">
-                  {range === "past" ? "Past Year" : "Current Year"} 
+                  {range === "past" ? "Past Year" : "Current Year"}
                 </Button>
               </DropdownMenuTrigger>
 
@@ -189,6 +217,216 @@ const MainPage = () => {
               <ContributionGraph />
             ) : (
               <ContributionGraphCurrent />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* CHARTS OVERVIEW */}
+
+      <h1 className="text-xl my-5">
+        Activity Stats{" "}
+        <LuActivity className="inline ml-2 w-5 h-5" />
+      </h1>
+      <div className="w-full px-10 mt-4">
+        <Card className="bg-white/10">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="space-y-1">
+              <CardTitle className="text-base">Activity Overview</CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Monthly Breakdown of Commits , PR and AI reviews (Last 6 Months
+                )
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant={viewMode === "normal" ? "default" : "outline"}
+                onClick={() => setViewMode("normal")}
+                className="text-xs"
+              >
+                Normal
+              </Button>
+
+              <Button
+                size="sm"
+                variant={viewMode === "stacked" ? "default" : "outline"}
+                onClick={() => setViewMode("stacked")}
+                className="text-xs"
+              >
+                Stacked
+              </Button>
+
+              <Button
+                size="sm"
+                variant={viewMode === "expand" ? "default" : "outline"}
+                onClick={() => setViewMode("expand")}
+                className="text-xs"
+              >
+                Expand
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {isLoadingActivity ? (
+              <p className="text-xs text-muted-foreground">
+                Loading activity data...
+              </p>
+            ) : (
+              <div className="h-[300px] w-full">
+                <ChartContainer
+                  config={{
+                    commits: { label: "Commits", color: "hsl(217, 91%, 60%)" },
+                    prs: {
+                      label: "Pull Requests",
+                      color: "hsl(271, 91%, 65%)",
+                    },
+                    reviews: {
+                      label: "AI Reviews",
+                      color: "hsl(160, 84%, 39%)",
+                    },
+                  }}
+                  className="h-full w-full"
+                >
+                  <AreaChart
+                    data={monthlyActivity || []}
+                    stackOffset={viewMode === "expand" ? "expand" : "none"}
+                    margin={{ top: 5, right: 5, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id="colorCommits"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(217, 91%, 60%)"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(217, 91%, 60%)"
+                          stopOpacity={0.1}
+                        />
+                      </linearGradient>
+                      <linearGradient id="colorPrs" x1="0" y1="0" x2="0" y2="1">
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(271, 91%, 65%)"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(271, 91%, 65%)"
+                          stopOpacity={0.1}
+                        />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorReviews"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor="hsl(160, 84%, 39%)"
+                          stopOpacity={0.8}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor="hsl(160, 84%, 39%)"
+                          stopOpacity={0.1}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      className="stroke-muted/20"
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="name"
+                      tickLine={false}
+                      axisLine={false}
+                      tickMargin={8}
+                      className="text-[10px]"
+                      tick={{ fill: "hsl(var(--muted-foreground))" }}
+                    />
+                    <ChartTooltip
+                      content={<ChartTooltipContent className="w-40" />}
+                      cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1 }}
+                    />
+
+                    <Area
+                      type="monotone"
+                      dataKey="commits"
+                      stackId={stackId}
+                      stroke="hsl(217, 91%, 60%)"
+                      strokeWidth={2}
+                      fill="url(#colorCommits)"
+                      dot={false}
+                    />
+
+                    <Area
+                      type="monotone"
+                      dataKey="prs"
+                      stackId={stackId}
+                      stroke="hsl(271, 91%, 65%)"
+                      strokeWidth={2}
+                      fill="url(#colorPrs)"
+                      dot={false}
+                    />
+
+                    <Area
+                      type="monotone"
+                      dataKey="reviews"
+                      stackId={stackId}
+                      stroke="hsl(160, 84%, 39%)"
+                      strokeWidth={2}
+                      fill="url(#colorReviews)"
+                      dot={false}
+                    />
+
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      width={30}
+                      tick={{
+                        fontSize: 10,
+                        fill: "hsl(var(--muted-foreground))",
+                      }}
+                      domain={[
+                        0,
+                        (dataMax: number) => Math.ceil(dataMax * 1.2),
+                      ]}
+                    />
+                  </AreaChart>
+                </ChartContainer>
+                <div className="flex items-center justify-center gap-4 mt-3">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-[hsl(217,91%,60%)]" />
+                    <span className="text-xs text-muted-foreground">
+                      Commits
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-[hsl(271,91%,65%)]" />
+                    <span className="text-xs text-muted-foreground">
+                      Pull Requests
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-2 h-2 rounded-full bg-[hsl(160,84%,39%)]" />
+                    <span className="text-xs text-muted-foreground">
+                      AI Reviews
+                    </span>
+                  </div>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
