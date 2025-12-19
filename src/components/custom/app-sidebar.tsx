@@ -68,22 +68,22 @@ export const AppSidebar = () => {
     },
     {
       title: "Repository",
-      url: "/repository",
+      url: "/dashboard/repository",
       icon: GithubIcon,
     },
     {
       title: "Reviews",
-      url: "/reviews",
+      url: "/dashboard/reviews",
       icon: LuListTodo,
     },
     {
       title: "Subscriptions",
-      url: "/subscriptions",
+      url: "/dashboard/subscriptions",
       icon: LuRocket,
     },
     {
       title: "Settings",
-      url: "/settings",
+      url: "/dashboard/settings",
       icon: Settings2,
     },
   ];

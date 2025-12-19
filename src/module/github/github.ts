@@ -85,7 +85,9 @@ export async function fetchUserContributions(token: string, username: string) {
   }
 }
 
-// =========================
+// ===========================
+// GETTING THE CURRENT YEAR CONTRIBUTIONS
+// ===========================
 export async function fetchCurrentYearContributions(
   token: string,
   username: string
@@ -128,3 +130,25 @@ export async function fetchCurrentYearContributions(
     return null;
   }
 }
+
+// ==============================
+// GETTING THE REPOSITORIES
+// ==============================
+export const getRepositories = async (
+  page: number = 1,
+  perPage: number = 10
+) => {
+  const token = await getGithubToken();
+
+  const octokit = new Octokit({ auth: token });
+
+  const { data } = await octokit.rest.repos.listForAuthenticatedUser({
+    sort: "updated",
+    direction: "desc",
+    visibility: "all",
+    page: page,
+    per_page: perPage,
+  });
+
+  return data;
+};

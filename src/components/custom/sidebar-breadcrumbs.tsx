@@ -5,32 +5,54 @@ import {
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbList,
+  BreadcrumbLink,
   BreadcrumbPage,
+  BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
 const navigationItems = [
   { title: "Dashboard", url: "/dashboard" },
-  { title: "Repository", url: "/repository" },
-  { title: "Reviews", url: "/reviews" },
-  { title: "Subscriptions", url: "/subscriptions" },
-  { title: "Settings", url: "/settings" },
+  { title: "Repository", url: "/dashboard/repository" },
+  { title: "Reviews", url: "/dashboard/reviews" },
+  { title: "Subscriptions", url: "/dashboard/subscriptions" },
+  { title: "Settings", url: "/dashboard/settings" },
 ];
 
 export function DashboardBreadcrumbs() {
   const pathname = usePathname();
 
-  const activeItem = navigationItems.find(
-    (item) => pathname === item.url || pathname.startsWith(item.url + "/")
-  );
+  // Find the deepest matching route
+  const activeItem = navigationItems
+    .filter(
+      (item) => pathname === item.url || pathname.startsWith(item.url + "/")
+    )
+    .sort((a, b) => b.url.length - a.url.length)[0];
 
   if (!activeItem) return null;
+
+  const isDashboardOnly = activeItem.url === "/dashboard";
 
   return (
     <Breadcrumb>
       <BreadcrumbList>
+        {/* Dashboard (root) */}
         <BreadcrumbItem>
-          <BreadcrumbPage>{activeItem.title}</BreadcrumbPage>
+          {isDashboardOnly ? (
+            <BreadcrumbPage>Dashboard</BreadcrumbPage>
+          ) : (
+            <BreadcrumbLink href="/dashboard">Dashboard</BreadcrumbLink>
+          )}
         </BreadcrumbItem>
+
+        {/* Child page */}
+        {!isDashboardOnly && (
+          <>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{activeItem.title}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </>
+        )}
       </BreadcrumbList>
     </Breadcrumb>
   );
