@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+"use server";
 import { Octokit } from "octokit";
 import { auth } from "@/lib/auth";
 import prisma from "@/lib/db";
@@ -151,4 +152,115 @@ export const getRepositories = async (
   });
 
   return data;
+};
+
+// ============================
+// CREATING WEBHOOK
+// ============================
+
+export const createWebhook = async (owner: string, repo: string) => {
+  const token = await getGithubToken();
+
+  const octokit = new Octokit({ auth: token });
+
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/webhooks/github`;
+
+  const { data: hooks } = await octokit.rest.repos.listWebhooks({
+    owner,
+    repo,
+  });
+
+  const exisitingHook = hooks.find((hook) => hook.config.url === webhookUrl);
+  if (exisitingHook) {
+    return exisitingHook;
+  }
+
+  const { data } = await octokit.rest.repos.createWebhook({
+    owner,
+    repo,
+    config: {
+      url: webhookUrl,
+      content_type: "json",
+    },
+    events: ["pull_request"],
+  });
+
+  return data;
+};
+
+// ===========================
+// TESTING ISSUES
+// ===========================
+export const getRepoIssues = async (
+  githubId: string,
+  state: "open" | "closed" | "all" = "all"
+) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user) {
+    throw new Error("Unauthorized");
+  }
+
+  // Find repo by GitHub ID
+  const repo = await prisma.repository.findUnique({
+    where: {
+      githubId: BigInt(githubId),
+    },
+  });
+
+  if (!repo || repo.userId !== session.user.id) {
+    throw new Error("Repository not found or unauthorized");
+  }
+
+  const token = await getGithubToken();
+  const octokit = new Octokit({ auth: token });
+
+  const { data: issues } = await octokit.rest.issues.listForRepo({
+    owner: repo.owner,
+    repo: repo.name,
+    state,
+    per_page: 100,
+    sort: "updated",
+    direction: "desc",
+  });
+
+  return issues;
+};
+
+// ==================================
+// DELETING WEBHOOK
+// ==================================
+export const deleteWebhook = async (owner: string, repo: string) => {
+  const token = await getGithubToken();
+
+  const octokit = new Octokit({ auth: token });
+
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_BASE_URL}/api/webhooks/github`;
+
+  try {
+    const { data: hooks } = await octokit.rest.repos.listWebhooks({
+      owner,
+      repo,
+    });
+
+    // delete only our webhook , no other platforms....
+    const hookToDelete = hooks.find((hook) => hook.config.url === webhookUrl);
+
+    if (hookToDelete) {
+      await octokit.rest.repos.deleteWebhook({
+        owner,
+        repo,
+        hook_id: hookToDelete.id,
+      });
+
+      return true;
+    }
+
+    return false;
+  } catch (e) {
+    console.log(e);
+    return false;
+  }
 };

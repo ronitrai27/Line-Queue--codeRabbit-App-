@@ -27,11 +27,13 @@ import { usePathname } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
 import { useAuthUser } from "@/lib/userAuthSession";
 import {
+  GitBranch,
   Github,
   GithubIcon,
   LogOutIcon,
   LucideWandSparkles,
   Moon,
+  Play,
   Settings2,
   Sun,
 } from "lucide-react";
@@ -86,6 +88,11 @@ export const AppSidebar = () => {
       url: "/dashboard/settings",
       icon: Settings2,
     },
+    {
+      title: "Actions",
+      url: "/dashboard/actions",
+      icon: Play,
+    }
   ];
 
   const isActive = (url: string) => {
