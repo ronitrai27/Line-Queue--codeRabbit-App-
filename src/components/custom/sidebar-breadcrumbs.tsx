@@ -16,6 +16,7 @@ const navigationItems = [
   { title: "Reviews", url: "/dashboard/reviews" },
   { title: "Subscriptions", url: "/dashboard/subscriptions" },
   { title: "Settings", url: "/dashboard/settings" },
+  { title: "Actions", url: "/dashboard/actions" },
 ];
 
 export function DashboardBreadcrumbs() {

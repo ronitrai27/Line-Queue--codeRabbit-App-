@@ -15,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { LuStar } from "react-icons/lu";
 import { Button } from "@/components/ui/button";
 import { RepositoryCardSkeleton } from "@/components/custom/RepoSkeleton";
+import { UseConnectRepo } from "@/module/repository/use-connect-repo";
 
 interface Repository {
   id: number;
@@ -38,6 +39,8 @@ const RepoPage = () => {
     isFetchingNextPage,
   } = useRepositories();
 
+  const { mutate: connectRepo } = UseConnectRepo();
+
   const [searchQuery, setSearchQuery] = useState("");
 
   const allRepos = data?.pages.flatMap((page) => page) || [];
@@ -52,7 +55,22 @@ const RepoPage = () => {
     null
   );
 
-  const handleConnect = async (repo: any) => {};
+  const handleConnect = async (repo: Repository) => {
+    setLocalConnectingId(repo.id);
+
+    connectRepo(
+      {
+        owner: repo.full_name.split("/")[0],
+        repo: repo.name,
+        githubId: repo.id,
+      },
+      {
+        onSettled: () => {
+          setLocalConnectingId(null);
+        },
+      }
+    );
+  };
 
   const observerTarget = useRef<HTMLDivElement>(null);
 
