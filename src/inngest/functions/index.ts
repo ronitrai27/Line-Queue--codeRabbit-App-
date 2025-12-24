@@ -2,21 +2,13 @@ import { inngest } from "@/inngest/client";
 import prisma from "@/lib/db";
 import { indexCodebase } from "@/module/ai/rag";
 import { getRepoFileContents } from "@/module/github/github";
-import { success } from "better-auth";
 
-export const helloWorld = inngest.createFunction(
-  { id: "hello-world" },
-  { event: "test/hello.world" },
-  async ({ event, step }) => {
-    await step.sleep("wait-a-moment", "1s");
-    return { message: `Hello ${event.data.email}!` };
-  }
-);
 
 export const indexRepo = inngest.createFunction(
   { id: "index-repo" },
   { event: "repository-connected" },
 
+  // getting these owner , repo , userId from the connectRepo function , where we called this...
   async ({ event, step }) => {
     const { owner, repo, userId } = event.data;
 

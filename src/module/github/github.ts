@@ -319,9 +319,7 @@ export async function getRepoFileContents(
           });
         }
       }
-    }
-
-    else if(item.type === "dir"){
+    } else if (item.type === "dir") {
       const subFiles = await getRepoFileContents(token, owner, repo, item.path);
 
       files = files.concat(subFiles);
@@ -329,4 +327,93 @@ export async function getRepoFileContents(
   }
 
   return files;
+}
+
+// ================================
+// TESTING FOLDER STRUCTURE
+// ================================
+interface FolderNode {
+  path: string;
+  name: string;
+  fileCount: number;
+  githubUrl: string;
+  children: FolderNode[];
+}
+
+export async function getRepoFolderStructure(
+  token: string,
+  owner: string,
+  repo: string,
+  branch: string = "main"
+): Promise<FolderNode> {
+  const octokit = new Octokit({ auth: token });
+
+  console.log("🔑 GitHub fetch started");
+  console.log("Owner:", owner);
+  console.log("Repo:", repo);
+  console.log("Branch:", branch);
+
+  // Root folder
+  const root: FolderNode = {
+    path: "",
+    name: repo,
+    fileCount: 0,
+    githubUrl: `https://github.com/${owner}/${repo}`,
+    children: [],
+  };
+
+  // Recursive function to build folder tree
+  async function buildFolderTree(
+    currentPath: string,
+    parentNode: FolderNode
+  ): Promise<void> {
+    console.log(
+      `📂 Fetching path: "${currentPath === "" ? "/" : currentPath}"`
+    );
+    try {
+      const { data } = await octokit.rest.repos.getContent({
+        owner,
+        repo,
+        path: currentPath,
+      });
+
+      if (!Array.isArray(data)) {
+        console.log("⚠️ Not a directory:", currentPath);
+        return;
+      }
+
+      if (Array.isArray(data)) {
+        // Count files in this directory
+        const filesInThisDir = data.filter((item) => item.type === "file");
+        parentNode.fileCount = filesInThisDir.length;
+
+        // Get all subdirectories
+        const folders = data.filter((item) => item.type === "dir");
+
+        // Process each folder
+        for (const folder of folders) {
+          const folderNode: FolderNode = {
+            path: folder.path,
+            name: folder.name,
+            fileCount: 0,
+            githubUrl: `https://github.com/${owner}/${repo}/tree/${branch}/${folder.path}`,
+            children: [],
+          };
+
+          parentNode.children.push(folderNode);
+
+          // Recursively get subfolders
+          await buildFolderTree(folder.path, folderNode);
+        }
+      }
+    } catch (error) {
+      console.error(`Error fetching ${currentPath}:`, error);
+    }
+  }
+
+  await buildFolderTree("", root);
+  console.log("✅ FINAL ROOT TREE:");
+  console.dir(root, { depth: null });
+
+  return root;
 }

@@ -24,11 +24,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { getRepoIssues } from "@/module/github/github";
+import { useRouter } from "next/navigation";
 
 type SelectedRepo = {
   id: string; // githubId
+  name: string; // repo name
   fullName: string;
   url: string;
+  owner?: string;  // owner name
 };
 
 const ActionPage = () => {
@@ -38,8 +41,8 @@ const ActionPage = () => {
     refetchOnMount: true,
   });
 
-  const [open, setOpen] = useState(false);
   const [selectedRepo, setSelectedRepo] = useState<SelectedRepo | null>(null);
+  const router = useRouter();
 
   const { data: issues, isLoading: isLoadingIssues } = useQuery({
     queryKey: ["repo-issues", selectedRepo?.id],
@@ -112,8 +115,15 @@ const ActionPage = () => {
                             id: repo.githubId.toString(),
                             fullName: repo.fullName,
                             url: repo.url,
+                            owner: repo.owner,
+                            name: repo.name,
                           });
-                          setOpen(true);
+
+                          router.push(
+                            `/dashboard/actions/visualize/${encodeURIComponent(
+                              repo.owner
+                            )}/${repo.name}`
+                          );
                         }}
                       >
                         Action <LuPlay className="inline ml-1 w-4 h-4" />
@@ -128,7 +138,7 @@ const ActionPage = () => {
       </Card>
 
       {/* =========================== */}
-      <Sheet open={open} onOpenChange={setOpen}>
+      {/* <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent className="min-w-132 overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="flex items-center gap-2">
@@ -197,7 +207,7 @@ const ActionPage = () => {
             )}
           </div>
         </SheetContent>
-      </Sheet>
+      </Sheet> */}
     </div>
   );
 };
